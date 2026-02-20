@@ -1,0 +1,532 @@
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tea Leaf Language - Ta'ang</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        :root {
+            --maroon: #6e0d0d;
+            --dark-maroon: #4a0606;
+            --pattern-red: #5d0909; 
+            --cream: #fdf5e6;
+            --gold: #d4af37;
+            --tea-green: #4F7942;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--dark-maroon);
+            background-image: 
+                linear-gradient(rgba(74, 6, 6, 0.85), rgba(42, 3, 3, 0.95)),
+                conic-gradient(from 0deg at 50% 50%, var(--pattern-red) 0deg 90deg, var(--dark-maroon) 90deg 180deg, var(--pattern-red) 180deg 270deg, var(--dark-maroon) 270deg 360deg);
+            background-size: 100% 100%, 45px 45px; 
+            background-attachment: fixed;
+            color: var(--cream);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- Settings & Switch Styles --- */
+        .switch { position: relative; display: inline-block; width: 46px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--maroon); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* --- Modal Boxes --- */
+        .note-box {
+            background: var(--cream);
+            padding: 20px;
+            border-radius: 25px;
+            width: 85%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        #note-modal, #profile-modal, #todo-modal, #settings-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 10001;
+            justify-content: center; align-items: center;
+        }
+
+        .note-toolbar {
+            display: flex; gap: 8px; margin-bottom: 10px; background: #eee;
+            padding: 8px; border-radius: 12px; justify-content: center;
+        }
+        .tool-btn {
+            background: white; border: 1px solid #ddd; border-radius: 8px;
+            padding: 5px 12px; cursor: pointer; font-weight: bold;
+            color: var(--maroon); font-size: 14px;
+        }
+        .note-area {
+            width: 100%; height: 180px; border: 2px solid #eee; border-radius: 15px;
+            padding: 12px; font-family: inherit; margin-bottom: 15px;
+            box-sizing: border-box; overflow-y: auto; background: white;
+            color: #333; text-align: left; outline: none; font-size: 1rem;
+        }
+
+        .note-area:empty:before { content: attr(placeholder); color: #999; }
+
+        /* --- To-Do Specific Styles --- */
+        .todo-input-container {
+            display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; background: #f0f0f0; padding: 18px; border-radius: 20px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .todo-input, .todo-date, .todo-note-input, .todo-priority, .todo-search {
+            width: 100%; padding: 12px; border-radius: 12px; border: 1.5px solid #ddd;
+            outline: none; font-family: inherit; box-sizing: border-box; transition: 0.3s; background: white;
+        }
+        .todo-input:focus, .todo-date:focus, .todo-note-input:focus, .todo-search:focus { border-color: var(--maroon); }
+        .todo-note-input { height: 70px; resize: none; }
+        
+        .todo-search { margin-bottom: 15px; border-radius: 25px; padding-left: 40px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill="%23999"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); background-repeat: no-repeat; background-position: 12px center; }
+
+        .btn-add-todo {
+            background: var(--maroon); color: white; border: none; 
+            padding: 15px; border-radius: 15px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            font-weight: bold; font-size: 1.05rem; width: 100%; box-shadow: 0 4px 10px rgba(110, 13, 13, 0.2);
+        }
+
+        .todo-item {
+            display: flex; flex-direction: column;
+            background: white; padding: 15px; border-radius: 18px;
+            margin-bottom: 15px; transition: 0.3s;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+        }
+
+        .priority-badge { padding: 2px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; color: white; }
+        .p-high { background: #ff4444; }
+        .p-med { background: #ff9800; }
+        .p-low { background: #2196f3; }
+
+        .btn-clear-all {
+            background: transparent; color: #888; border: 1px dashed #ccc;
+            padding: 10px; border-radius: 12px; cursor: pointer;
+            font-size: 0.85rem; width: 100%; margin-top: 10px; transition: 0.3s;
+        }
+        .btn-clear-all:hover { color: #ff4444; border-color: #ff4444; background: #fff1f1; }
+
+        /* --- Floating Draggable Note Button --- */
+        #floating-note-btn {
+            position: fixed; 
+            bottom: 90px; 
+            right: 20px;
+            background: var(--gold); width: 65px; height: 65px;
+            border-radius: 50%; border: 3px solid var(--cream);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            cursor: grab; z-index: 999; touch-action: none;
+        }
+
+        #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, var(--maroon), #2a0303);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 10002; transition: opacity 0.8s ease, visibility 0.8s;
+        }
+
+        .splash-content { text-align: center; }
+        .logo-wrapper { width: 120px; height: 120px; margin: 0 auto 20px; animation: pulse 2s infinite ease-in-out; }
+        .splash-logo { width: 100%; filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.4)); }
+        .app-name { color: var(--gold); font-size: 2.2rem; letter-spacing: 4px; margin: 10px 0 5px; font-weight: 900; }
+        .loader { width: 150px; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; margin: 20px auto 0; overflow: hidden; }
+        .loader-bar { width: 0%; height: 100%; background: var(--gold); animation: loading 2.5s forwards ease-in-out; }
+        
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes loading { 0% { width: 0%; } 100% { width: 100%; } }
+        .fade-out { opacity: 0; visibility: hidden; }
+
+        .dialect-bar { width: 100%; background: rgba(0,0,0,0.6); padding: 15px 0; display: flex; justify-content: center; gap: 10px; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(8px); }
+        .dialect-btn { background: transparent; border: 1.5px solid var(--gold); color: var(--gold); padding: 6px 18px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: 0.3s; }
+        .dialect-btn.active { background: var(--gold); color: var(--maroon); font-weight: bold; }
+
+        .streak-container { position: relative; width: 180px; height: 180px; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
+        .streak-number { font-size: 3.5rem; font-weight: 900; color: var(--gold); z-index: 5; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+        .leaf-svg { position: absolute; width: 50px; height: 50px; transition: 0.5s ease; }
+        .l1 { top: 0; transform: rotate(0deg); }
+        .l2 { right: 0px; top: 30px; transform: rotate(72deg); }
+        .l3 { right: 30px; bottom: 0; transform: rotate(144deg); }
+        .l4 { left: 30px; bottom: 0; transform: rotate(216deg); }
+        .l5 { left: 0px; top: 30px; transform: rotate(288deg); }
+
+        .card { background: var(--cream); color: var(--maroon); width: 85%; max-width: 380px; border-radius: 25px; padding: 25px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.6); margin-bottom: 30px; margin-top: 30px; }
+        .word-main { font-size: 2.5rem; margin: 10px 0; font-weight: bold; }
+        .word-sub { color: #666; font-style: italic; margin-bottom: 20px; }
+
+        .action-btns { display: flex; justify-content: center; gap: 20px; margin-top: 15px; }
+        .circle-btn { width: 55px; height: 55px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
+        .btn-audio { background: #eee; color: var(--maroon); }
+        .btn-mic { background: var(--maroon); color: white; box-shadow: 0 4px 10px rgba(110, 13, 13, 0.3); }
+
+        .level-section { width: 85%; max-width: 380px; margin-bottom: 100px; }
+        .level-info { display: flex; justify-content: space-between; color: var(--gold); font-size: 0.85rem; margin-bottom: 8px; }
+        .progress-bg { height: 12px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; border: 1px solid rgba(212, 175, 55, 0.3); }
+        .progress-fill { width: 45%; height: 100%; background: linear-gradient(90deg, var(--gold), #ffdf80); }
+
+        .settings-btn { position: fixed; bottom: 90px; left: 20px; background: var(--gold); padding: 10px; border-radius: 50%; border: 3px solid var(--cream); cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 90; }
+
+        .nav { position: fixed; bottom: 0; width: 100%; background: rgba(42, 3, 3, 0.95); display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid var(--gold); backdrop-filter: blur(10px); z-index: 100; }
+        .nav-item { color: var(--cream); text-decoration: none; text-align: center; font-size: 0.7rem; opacity: 0.6; cursor: pointer; }
+        .nav-item.active { opacity: 1; color: var(--gold); }
+    </style>
+</head>
+<body>
+
+    <div id="settings-modal">
+        <div style="background:var(--cream); color:var(--maroon); padding:25px; border-radius:25px; width:80%; max-width:300px; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="margin-top:0;">ဆက်တင်များ</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin:25px 0; font-weight: bold;">
+                <span>တုန်ခါမှု (Vibration)</span>
+                <label class="switch">
+                    <input type="checkbox" id="vibration-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <button onclick="toggleSettings()" style="background:var(--maroon); color:white; border:none; padding:12px 30px; border-radius:15px; cursor:pointer; font-weight:bold; width:100%;">ပိတ်မည်</button>
+        </div>
+    </div>
+
+    <div id="profile-modal">
+        <div class="note-box" style="text-align:center;">
+            <h3 style="margin-top:0; color: var(--maroon);">ကျွန်ုပ်၏ အချက်အလက်</h3>
+            <div class="streak-container">
+                <div class="streak-number">၅</div>
+                <div class="leaf-svg l1"><svg viewBox="0 0 100 100"><path d="M50 80 C 20 80, 10 50, 50 20 C 90 50, 80 80, 50 80" fill="#4F7942"/><path d="M50 80 L 50 25" stroke="#3e5f34" stroke-width="2" fill="none"/></svg></div>
+                <div class="leaf-svg l2"><svg viewBox="0 0 100 100"><path d="M50 80 C 20 80, 10 50, 50 20 C 90 50, 80 80, 50 80" fill="#4F7942"/><path d="M50 80 L 50 25" stroke="#3e5f34" stroke-width="2" fill="none"/></svg></div>
+                <div class="leaf-svg l3"><svg viewBox="0 0 100 100"><path d="M50 80 C 20 80, 10 50, 50 20 C 90 50, 80 80, 50 80" fill="#4F7942"/><path d="M50 80 L 50 25" stroke="#3e5f34" stroke-width="2" fill="none"/></svg></div>
+                <div class="leaf-svg l4"><svg viewBox="0 0 100 100"><path d="M50 80 C 20 80, 10 50, 50 20 C 90 50, 80 80, 50 80" fill="#4F7942"/><path d="M50 80 L 50 25" stroke="#3e5f34" stroke-width="2" fill="none"/></svg></div>
+                <div class="leaf-svg l5"><svg viewBox="0 0 100 100"><path d="M50 80 C 20 80, 10 50, 50 20 C 90 50, 80 80, 50 80" fill="#4F7942"/><path d="M50 80 L 50 25" stroke="#3e5f34" stroke-width="2" fill="none"/></svg></div>
+            </div>
+            <p style="color: var(--gold); font-weight: bold; margin-bottom: 25px;">လက်ဖက်ညွန့် ၅ ညွန့် ရှင်သန်နေပြီ</p>
+            <button onclick="toggleProfile()" style="background:var(--maroon); color:white; border:none; padding:12px; border-radius:12px; cursor:pointer; font-weight:bold; width: 100%;">ပိတ်မည်</button>
+        </div>
+    </div>
+
+    <div id="note-modal">
+        <div class="note-box">
+            <h3 style="color:var(--maroon); margin-top:0;">မှတ်စု (Notes)</h3>
+            <div class="note-toolbar">
+                <button class="tool-btn" onclick="formatText('bold')">B</button>
+                <button class="tool-btn" onclick="formatText('italic')" style="font-style: italic;">I</button>
+                <button class="tool-btn" onclick="formatText('backColor', 'yellow')">🖌️</button>
+                <button class="tool-btn" onclick="formatText('foreColor', '#6e0d0d')">🎨</button>
+            </div>
+            <div id="note-input" class="note-area" contenteditable="true" placeholder="ဒီနေရာမှာ မှတ်သားပါ..."></div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="saveNote()" style="flex:1; background:var(--maroon); color:white; border:none; padding:12px; border-radius:12px; cursor:pointer; font-weight:bold;">သိမ်းမည်</button>
+                <button onclick="toggleNote()" style="flex:1; background:#ccc; border:none; padding:12px; border-radius:12px; cursor:pointer; font-weight:bold;">ပိတ်မည်</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="todo-modal">
+        <div class="note-box" style="display: flex; flex-direction: column; max-height: 90vh; width: 92%;">
+            <h3 style="color:var(--maroon); margin-top:0;">လုပ်ဆောင်ရန် (To-Do)</h3>
+            
+            <div class="todo-input-container">
+                <input type="text" id="todo-input-field" class="todo-input" placeholder="အကြောင်းအရာ...">
+                <div style="display:flex; gap:10px;">
+                    <input type="date" id="todo-date-field" class="todo-date" style="flex:1;">
+                    <select id="todo-priority-field" class="todo-priority" style="flex:1;">
+                        <option value="low">Low 🔵</option>
+                        <option value="med" selected>Medium 🟠</option>
+                        <option value="high">High 🔴</option>
+                    </select>
+                </div>
+                <textarea id="todo-note-field" class="todo-note-input" placeholder="အသေးစိတ်မှတ်စု..."></textarea>
+                <button onclick="addTodo()" class="btn-add-todo">
+                    <span class="material-icons-round">add_task</span> တာဝန်အသစ်ထည့်မည်
+                </button>
+            </div>
+
+            <input type="text" id="todo-search-field" class="todo-search" placeholder="ရှာဖွေရန်..." oninput="renderTodos()">
+
+            <div id="todo-list-container" style="flex:1; overflow-y:auto; text-align:left; color:#333; min-height:100px; padding: 5px;">
+            </div>
+            
+            <button id="clear-all-btn" class="btn-clear-all" onclick="clearAllTodos()">အားလုံးကို ဖျက်မည်</button>
+            <button onclick="toggleTodoModal()" style="margin-top:15px; background:#ccc; border:none; padding:12px; border-radius:12px; cursor:pointer; font-weight:bold;">ပိတ်မည်</button>
+        </div>
+    </div>
+
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="logo-wrapper">
+                <svg viewBox="0 0 100 100" class="splash-logo">
+                    <path d="M50 90 C 20 90, 5 50, 50 10 C 95 50, 80 90, 50 90" fill="#4F7942"/>
+                    <path d="M50 90 L 50 15" stroke="#d4af37" stroke-width="3" fill="none"/>
+                    <path d="M50 45 L 75 30 M 50 60 L 25 45 M 50 75 L 70 65" stroke="#d4af37" stroke-width="2" fill="none"/>
+                </svg>
+            </div>
+            <h1 class="app-name">TEA LEAF</h1>
+            <p style="color: var(--cream); opacity: 0.8;">Ta'ang Language App</p>
+            <div class="loader"><div class="loader-bar"></div></div>
+        </div>
+    </div>
+
+    <div class="dialect-bar">
+        <button class="dialect-btn active">အခြေခံ</button>
+        <button class="dialect-btn">အလယ်အလတ်</button>
+        <button class="dialect-btn">အဆင့်မြင့်</button>
+    </div>
+
+    <div class="card">
+        <div style="width: 100%; height: 160px; background: #eee; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: #ccc;">
+            <span class="material-icons-round" style="font-size: 50px;">image</span>
+        </div>
+        <h1 class="word-main" id="taang-word">ရိုဆေ</h1>
+        <p class="word-sub" id="mm-word">Ro Say (မင်္ဂလာပါ)</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 40px;">
+            <button onclick="prevWord()" style="background:none; border:none; color:var(--maroon); cursor:pointer;"><span class="material-icons-round">arrow_back_ios</span></button>
+            <span id="word-count" style="font-size: 0.9rem; color: #888; font-weight: bold;">1 / 5</span>
+            <button onclick="nextWord()" style="background:none; border:none; color:var(--maroon); cursor:pointer;"><span class="material-icons-round">arrow_forward_ios</span></button>
+        </div>
+        <div class="action-btns">
+            <button class="circle-btn btn-audio"><span class="material-icons-round">volume_up</span></button>
+            <button class="circle-btn btn-mic"><span class="material-icons-round">mic</span></button>
+        </div>
+    </div>
+
+    <div class="level-section">
+        <div class="level-info"><span>Tea Picker</span><span>Village Elder</span></div>
+        <div class="progress-bg"><div class="progress-fill"></div></div>
+    </div>
+
+    <div class="settings-btn" onclick="toggleSettings()">
+        <span class="material-icons-round" style="font-size: 30px; color: var(--maroon);">settings</span>
+    </div>
+
+    <div id="floating-note-btn">
+        <span class="material-icons-round" style="font-size: 35px; color: var(--maroon);">edit_note</span>
+    </div>
+
+    <nav class="nav">
+        <a href="#" class="nav-item active"><span class="material-icons-round">home</span><br>ပင်မ</a>
+        <a href="#" class="nav-item"><span class="material-icons-round">book</span><br>အဘိဓာန်</a>
+        <a href="#" class="nav-item" onclick="toggleTodoModal()"><span class="material-icons-round">checklist</span><br>လုပ်ဆောင်ရန်</a>
+        <a href="#" class="nav-item" onclick="toggleProfile()"><span class="material-icons-round">account_circle</span><br>ကိုယ်ရေး</a>
+    </nav>
+
+    <script>
+        function hapticFeedback() {
+            const toggle = document.getElementById('vibration-toggle');
+            if (toggle && toggle.checked && navigator.vibrate) {
+                navigator.vibrate(40);
+            }
+        }
+
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'flex' : 'none';
+            hapticFeedback();
+        }
+
+        function toggleProfile() {
+            const modal = document.getElementById('profile-modal');
+            modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'flex' : 'none';
+            hapticFeedback();
+        }
+
+        function toggleNote() {
+            const modal = document.getElementById('note-modal');
+            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+            if(modal.style.display === 'flex') hapticFeedback();
+        }
+
+        function toggleTodoModal() {
+            const modal = document.getElementById('todo-modal');
+            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+            if(modal.style.display === 'flex') { hapticFeedback(); renderTodos(); }
+        }
+
+        function formatText(command, value = null) { document.execCommand(command, false, value); hapticFeedback(); }
+
+        function saveNote() {
+            const noteContent = document.getElementById('note-input').innerHTML;
+            localStorage.setItem('taang_rich_note', noteContent);
+            hapticFeedback();
+            alert('မှတ်စုကို သိမ်းဆည်းလိုက်ပါပြီ။');
+            toggleNote();
+        }
+
+        let todos = JSON.parse(localStorage.getItem('taang_todos')) || [];
+
+        function addTodo() {
+            const input = document.getElementById('todo-input-field');
+            const dateInput = document.getElementById('todo-date-field');
+            const noteInput = document.getElementById('todo-note-field');
+            const priorityInput = document.getElementById('todo-priority-field');
+            const text = input.value.trim();
+            if (!text) return;
+            todos.push({ id: Date.now(), text: text, date: dateInput.value, note: noteInput.value.trim(), priority: priorityInput.value, completed: false });
+            input.value = ""; dateInput.value = ""; noteInput.value = "";
+            saveAndRender();
+            hapticFeedback();
+        }
+
+        function toggleTask(id) {
+            todos = todos.map(t => t.id === id ? {...t, completed: !t.completed} : t);
+            saveAndRender();
+            hapticFeedback();
+        }
+
+        function deleteTask(id) {
+            todos = todos.filter(t => t.id !== id);
+            saveAndRender();
+            hapticFeedback();
+        }
+
+        function clearAllTodos() {
+            if (todos.length === 0) return;
+            if (confirm("တာဝန်အားလုံးကို ဖျက်ပစ်ရန် သေချာပါသလား?")) {
+                todos = [];
+                saveAndRender();
+                hapticFeedback();
+            }
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('taang_todos', JSON.stringify(todos));
+            renderTodos();
+        }
+
+        function renderTodos() {
+            const container = document.getElementById('todo-list-container');
+            const searchTerm = document.getElementById('todo-search-field').value.toLowerCase();
+            const clearBtn = document.getElementById('clear-all-btn');
+            
+            const filteredTodos = todos.filter(t => t.text.toLowerCase().includes(searchTerm) || t.note.toLowerCase().includes(searchTerm));
+            
+            clearBtn.style.display = todos.length > 0 ? "block" : "none";
+            container.innerHTML = filteredTodos.length ? "" : `<p style='text-align:center;color:#999;margin-top:20px;'>${todos.length === 0 ? 'တာဝန်များ မရှိသေးပါ။' : 'ရှာဖွေမှုမတွေ့ပါ။'}</p>`;
+            
+            filteredTodos.forEach(todo => {
+                const pClass = todo.priority === 'high' ? 'p-high' : (todo.priority === 'med' ? 'p-med' : 'p-low');
+                const pText = todo.priority === 'high' ? 'High' : (todo.priority === 'med' ? 'Medium' : 'Low');
+                const div = document.createElement('div');
+                div.className = 'todo-item';
+                div.style.borderLeft = `6px solid ${todo.completed ? 'var(--tea-green)' : (todo.priority === 'high' ? '#ff4444' : 'var(--gold)')}`;
+                div.innerHTML = `
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+                        <div style="display:flex; align-items:center; gap:12px; flex:1;" onclick="toggleTask(${todo.id})">
+                            <span class="material-icons-round" style="font-size:28px; color:${todo.completed ? 'var(--tea-green)' : '#ddd'};">
+                                ${todo.completed ? 'check_circle' : 'radio_button_unchecked'}
+                            </span>
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+                                <span style="text-decoration:${todo.completed ? 'line-through' : 'none'}; color:${todo.completed ? '#aaa' : '#111'}; font-weight:700; font-size:1.1rem;">${todo.text}</span>
+                                <div style="display:flex; gap:6px; align-items:center;">
+                                    <span class="priority-badge ${pClass}">${pText}</span>
+                                    ${todo.date ? `<span style="background:#f0f0f0; color:#666; padding:2px 8px; border-radius:6px; font-size:0.75rem; border:1px solid #e0e0e0;">📅 ${todo.date}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <span class="material-icons-round" style="color:#ff4444; cursor:pointer; font-size:24px; padding:5px;" onclick="deleteTask(${todo.id})">delete_outline</span>
+                    </div>
+                    ${todo.note ? `<div style="margin-top:12px; padding:10px; background:#fafafa; border-radius:10px; font-size:0.9rem; color:#444; border-left:3px solid #ddd; line-height:1.4;">${todo.note}</div>` : ''}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Draggable Logic
+        const noteBtn = document.getElementById('floating-note-btn');
+        let isDragging = false;
+        const moveHandler = (e) => {
+            isDragging = true;
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const btnSize = 65;
+            let newX = Math.max(0, Math.min(clientX - (btnSize / 2), window.innerWidth - btnSize));
+            let newY = Math.max(0, Math.min(clientY - (btnSize / 2), window.innerHeight - btnSize));
+            noteBtn.style.left = newX + 'px'; 
+            noteBtn.style.top = newY + 'px';
+            noteBtn.style.right = 'auto'; 
+            noteBtn.style.bottom = 'auto';
+            if (e.cancelable) e.preventDefault();
+        };
+
+        noteBtn.addEventListener('mousedown', (e) => { isDragging = false; });
+        noteBtn.addEventListener('touchstart', (e) => { isDragging = false; }, {passive: true});
+        window.addEventListener('mousemove', (e) => { if(e.buttons === 1) moveHandler(e); });
+        noteBtn.addEventListener('touchmove', moveHandler, { passive: false });
+        noteBtn.addEventListener('touchend', (e) => { if (!isDragging) toggleNote(); });
+        noteBtn.addEventListener('click', (e) => { if (!isDragging) toggleNote(); });
+
+        // --- Data Logic & Persistence ---
+        const basicWords = [
+            { taang: "ရိုဆေ", mm: "Ro Say (မင်္ဂလာပါ)" },
+            { taang: "အိုးမ်ရောင်", mm: "Om Yaung (ထမင်းစားပြီးပြီလား)" },
+            { taang: "အိုးမ်ရောင်အေး", mm: "Om Yaung Ay (စားပြီးပါပြီ)" },
+            { taang: "ဂါးန်မား", mm: "Gan Mar (ကျေးဇူးတင်ပါတယ်)" },
+            { taang: "အူအေ", mm: "U-Ay (ဟုတ်ကဲ့/အင်း)" }
+        ];
+
+        let currentIndex = 0;
+
+        function saveLevel(levelName) {
+            localStorage.setItem('taang_saved_level', levelName);
+        }
+
+        function displayWord(index) {
+            document.getElementById('taang-word').innerText = basicWords[index].taang;
+            document.getElementById('mm-word').innerText = basicWords[index].mm;
+            document.getElementById('word-count').innerText = `${index + 1} / ${basicWords.length}`;
+            localStorage.setItem('taang_word_index', index); // Save progress
+        }
+
+        function nextWord() { hapticFeedback(); if (currentIndex < basicWords.length - 1) { currentIndex++; displayWord(currentIndex); } }
+        function prevWord() { hapticFeedback(); if (currentIndex > 0) { currentIndex--; displayWord(currentIndex); } }
+
+        window.addEventListener('load', () => {
+            // Restore Note
+            const savedNote = localStorage.getItem('taang_rich_note');
+            if(savedNote) document.getElementById('note-input').innerHTML = savedNote;
+
+            // Restore Level UI
+            const savedLevel = localStorage.getItem('taang_saved_level');
+            if (savedLevel) {
+                document.querySelectorAll('.dialect-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.innerText === savedLevel) btn.classList.add('active');
+                });
+            }
+
+            // Restore Word Progress
+            const savedIndex = localStorage.getItem('taang_word_index');
+            if (savedIndex) {
+                currentIndex = parseInt(savedIndex);
+            }
+            displayWord(currentIndex);
+
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('fade-out');
+            }, 2500);
+        });
+
+        document.querySelectorAll('.dialect-btn, .nav-item').forEach(el => {
+            el.addEventListener('click', function() {
+                hapticFeedback();
+                const isDialect = this.classList.contains('dialect-btn');
+                const selector = isDialect ? '.dialect-btn.active' : '.nav-item.active';
+                const currentActive = document.querySelector(selector);
+                
+                if(currentActive) currentActive.classList.remove('active');
+                this.classList.add('active');
+
+                if(isDialect) saveLevel(this.innerText);
+            });
+        });
+    </script>
+</body>
+</html>
